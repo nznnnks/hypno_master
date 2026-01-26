@@ -37,10 +37,19 @@ export default function AuthPage() {
 
       const data = (await res.json().catch(() => null)) as any;
       if (!res.ok) {
+        if (data?.error === "email_not_verified") {
+          router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+          return;
+        }
         setError(data?.error ?? `HTTP ${res.status}`);
         return;
       }
 
+      try {
+        localStorage.setItem("auth_user", JSON.stringify(data?.user ?? null));
+      } catch {
+        // ignore storage failures (e.g. private mode)
+      }
       router.push("/account");
     } catch {
       setError("Network error");

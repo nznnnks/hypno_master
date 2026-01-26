@@ -1,4 +1,7 @@
-import Link from "next/link";
+﻿"use client";
+
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { CreditCard, Lock, LogOut, User } from "lucide-react";
 
 const transactions = [
@@ -8,6 +11,160 @@ const transactions = [
 ];
 
 export default function AccountPage() {
+  const router = useRouter();
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPassword2, setNewPassword2] = useState("");
+  const [pwCode, setPwCode] = useState("");
+  const [pwPending, setPwPending] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwResending, setPwResending] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("auth_user");
+      if (!raw) return;
+      const user = JSON.parse(raw) as { name?: unknown; email?: unknown } | null;
+      const fullName = String(user?.name ?? "").trim();
+      const parts = fullName ? fullName.split(/\s+/g) : [];
+      setFirstName(parts[0] ?? "");
+      setLastName(parts.slice(1).join(" "));
+      setEmail(String(user?.email ?? "").trim());
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function onLogout() {
+    try {
+      localStorage.removeItem("auth_user");
+    } catch {
+      // ignore
+    }
+    router.push("/auth");
+  }
+
+  async function onRequestPasswordChange(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPwError(null);
+    setPwSuccess(null);
+
+    if (!email) {
+      setPwError("Missing email");
+      router.push("/auth");
+      return;
+    }
+    if (!currentPassword || !newPassword || !newPassword2) {
+      setPwError("Missing fields");
+      return;
+    }
+    if (newPassword !== newPassword2) {
+      setPwError("Passwords do not match");
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/request-password-change`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as any;
+      if (!res.ok) {
+        setPwError(data?.error ?? `HTTP ${res.status}`);
+        return;
+      }
+      setPwPending(true);
+      setPwSuccess("Код подтверждения отправлен на email.");
+    } catch {
+      setPwError("Network error");
+    } finally {
+      setPwLoading(false);
+    }
+  }
+
+  async function onConfirmPasswordChange() {
+    setPwError(null);
+    setPwSuccess(null);
+
+    const normalized = pwCode.replace(/\s+/g, "");
+    if (!email) {
+      setPwError("Missing email");
+      router.push("/auth");
+      return;
+    }
+    if (!/^\d{6}$/.test(normalized)) {
+      setPwError("Введите 6-значный код");
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/confirm-password-change`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: normalized }),
+      });
+      const data = (await res.json().catch(() => null)) as any;
+      if (!res.ok) {
+        setPwError(data?.error ?? `HTTP ${res.status}`);
+        return;
+      }
+
+      setPwPending(false);
+      setPwCode("");
+      setCurrentPassword("");
+      setNewPassword("");
+      setNewPassword2("");
+      setPwSuccess("Пароль успешно обновлён.");
+    } catch {
+      setPwError("Network error");
+    } finally {
+      setPwLoading(false);
+    }
+  }
+
+  async function onResendPasswordChangeCode() {
+    setPwError(null);
+    setPwSuccess(null);
+
+    if (!email) {
+      setPwError("Missing email");
+      router.push("/auth");
+      return;
+    }
+
+    setPwResending(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/resend-password-change`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await res.json().catch(() => null)) as any;
+      if (!res.ok) {
+        setPwError(data?.error ?? `HTTP ${res.status}`);
+        return;
+      }
+      setPwSuccess("Код отправлен повторно.");
+    } catch {
+      setPwError("Network error");
+    } finally {
+      setPwResending(false);
+    }
+  }
+
   return (
     <section className="relative min-h-screen pt-28 pb-20 bg-[#fdfcf8] overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -30,13 +187,14 @@ export default function AccountPage() {
               Управляйте профилем, паролем и историей оплат в одном месте.
             </p>
           </div>
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={onLogout}
             className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-primary transition-colors shadow-lg shadow-black/10"
           >
             <LogOut className="w-4 h-4" />
             Выйти
-          </Link>
+          </button>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
@@ -61,7 +219,9 @@ export default function AccountPage() {
                 </span>
                 <input
                   type="text"
-                  defaultValue="Иван"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.currentTarget.value)}
+                  placeholder="Иван"
                   className="mt-2 w-full rounded-sm border border-neutral-200 bg-white/80 px-4 py-3 text-neutral-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </label>
@@ -71,7 +231,9 @@ export default function AccountPage() {
                 </span>
                 <input
                   type="text"
-                  defaultValue="Иванов"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.currentTarget.value)}
+                  placeholder="Иванов"
                   className="mt-2 w-full rounded-sm border border-neutral-200 bg-white/80 px-4 py-3 text-neutral-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </label>
@@ -81,7 +243,9 @@ export default function AccountPage() {
                 </span>
                 <input
                   type="email"
-                  defaultValue="you@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.currentTarget.value)}
+                  placeholder="you@email.com"
                   className="mt-2 w-full rounded-sm border border-neutral-200 bg-white/80 px-4 py-3 text-neutral-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </label>
@@ -119,7 +283,7 @@ export default function AccountPage() {
                   Пароль
                 </h2>
               </div>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={onRequestPasswordChange}>
                 <label className="block">
                   <span className="text-xs font-bold uppercase tracking-widest text-white/70">
                     Текущий пароль
@@ -127,6 +291,8 @@ export default function AccountPage() {
                   <input
                     type="password"
                     placeholder="••••••••"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.currentTarget.value)}
                     className="mt-2 w-full rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
                   />
                 </label>
@@ -137,6 +303,8 @@ export default function AccountPage() {
                   <input
                     type="password"
                     placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.currentTarget.value)}
                     className="mt-2 w-full rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
                   />
                 </label>
@@ -147,12 +315,63 @@ export default function AccountPage() {
                   <input
                     type="password"
                     placeholder="••••••••"
+                    value={newPassword2}
+                    onChange={(e) => setNewPassword2(e.currentTarget.value)}
                     className="mt-2 w-full rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
                   />
                 </label>
-                <button className="mt-2 w-full px-6 py-3 bg-secondary text-neutral-900 font-black uppercase tracking-widest text-xs rounded-sm hover:bg-primary hover:text-white transition-colors">
+                {pwError ? (
+                  <div className="rounded-sm border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    {pwError}
+                  </div>
+                ) : null}
+                {pwSuccess ? (
+                  <div className="rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
+                    {pwSuccess}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={pwLoading}
+                  className="mt-2 w-full px-6 py-3 bg-secondary text-neutral-900 font-black uppercase tracking-widest text-xs rounded-sm hover:bg-primary hover:text-white transition-colors disabled:opacity-60"
+                >
                   Обновить пароль
                 </button>
+
+                {pwPending ? (
+                  <div className="mt-4 space-y-3">
+                    <label className="block">
+                      <span className="text-xs font-bold uppercase tracking-widest text-white/70">
+                        Код подтверждения
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Введите 6‑значный код"
+                        value={pwCode}
+                        onChange={(e) => setPwCode(e.currentTarget.value)}
+                        className="mt-2 w-full rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30 tracking-[0.3em] text-center"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={onConfirmPasswordChange}
+                      disabled={pwLoading}
+                      className="w-full px-6 py-3 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-sm hover:bg-secondary hover:text-neutral-900 transition-colors disabled:opacity-60"
+                    >
+                      Подтвердить код
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onResendPasswordChangeCode}
+                      disabled={pwResending}
+                      className="w-full px-6 py-3 border border-white/10 bg-white/5 text-white/80 font-black uppercase tracking-widest text-xs rounded-sm hover:border-secondary hover:text-white transition-colors disabled:opacity-60"
+                    >
+                      Отправить код повторно
+                    </button>
+                  </div>
+                ) : null}
               </form>
             </div>
           </div>

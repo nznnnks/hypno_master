@@ -51,7 +51,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/auth");
+      router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
     } catch {
       setError("Network error");
     } finally {
