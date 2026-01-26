@@ -1,7 +1,54 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { LogIn, Sparkles } from "lucide-react";
 
 export default function AuthPage() {
+  const router = useRouter();
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    const form = e.currentTarget;
+    const email =
+      (form.querySelector('input[type="email"]') as HTMLInputElement | null)?.value.trim() ??
+      "";
+    const password =
+      (form.querySelector('input[type="password"]') as HTMLInputElement | null)?.value ?? "";
+
+    if (!email || !password) {
+      setError("Missing fields");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = (await res.json().catch(() => null)) as any;
+      if (!res.ok) {
+        setError(data?.error ?? `HTTP ${res.status}`);
+        return;
+      }
+
+      router.push("/account");
+    } catch {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <section className="relative min-h-screen pt-28 pb-20 bg-[#fdfcf8] overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -24,7 +71,7 @@ export default function AuthPage() {
               Войдите, чтобы получить доступ к курсам, записям и персональным рекомендациям.
             </p>
 
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={onSubmit}>
               <label className="block">
                 <span className="text-xs font-bold uppercase tracking-widest text-neutral-700">
                   Email
@@ -45,8 +92,16 @@ export default function AuthPage() {
                   className="mt-2 w-full rounded-sm border border-neutral-200 bg-white/80 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </label>
-              <Link
-                href="/auth/verify"
+
+              {error ? (
+                <div className="rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loading}
                 className="group relative w-full px-10 py-4 bg-primary text-white font-black rounded-sm overflow-hidden transition-all duration-300 hover:shadow-[0_10px_40px_rgba(230,81,0,0.35)] uppercase tracking-widest text-xs inline-flex items-center justify-center"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
@@ -54,7 +109,7 @@ export default function AuthPage() {
                   Войти
                 </span>
                 <div className="absolute inset-0 bg-neutral-950 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-              </Link>
+              </button>
             </form>
 
             <div className="mt-8 flex items-center justify-between text-sm">
