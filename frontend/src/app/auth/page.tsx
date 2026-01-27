@@ -129,9 +129,12 @@ export default function AuthPage() {
               >
                 Нет аккаунта? Регистрация
               </Link>
-              <button className="text-neutral-500 hover:text-neutral-800 transition-colors">
+              <Link
+                href="/auth/forgot"
+                className="text-neutral-500 hover:text-neutral-800 transition-colors"
+              >
                 Забыли пароль?
-              </button>
+              </Link>
             </div>
           </div>
 
