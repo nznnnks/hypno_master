@@ -6,6 +6,12 @@ Dev-only Python backend with SQLite storage for user registration and login.
 
 SMTP settings live in `backend/settings.py`. Create file settings.py and fill SMTP strings
 
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = '' 
+EMAIL_HOST_PASSWORD = ''
+
 
 ## Email verification API
 
