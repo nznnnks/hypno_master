@@ -8,7 +8,8 @@ const socialLinks = [
 
 const menuItems = [
   { name: 'Главная', href: '/' },
-  { name: 'Направления', href: '/directions' },
+  { name: 'О мастере', href: '/master' },
+  { name: 'Карта сайта', href: '/sitemap' },
   { name: 'Гимнастика', href: '/gymnastics' },
   { name: 'Цигун', href: '/qigong' },
   { name: 'Исцеление', href: '/healing' },
@@ -29,12 +30,12 @@ export default function Header() {
             <span className="font-bold text-xl hidden md:inline-block text-neutral-900 uppercase tracking-tighter">БЕЗ МИСТИКИ</span>
           </Link>
 
-          <nav className="hidden xl:flex items-center space-x-6 text-sm font-medium">
+          <nav className="hidden xl:flex items-center space-x-5 text-xs font-semibold">
             {menuItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-secondary text-neutral-800"
+                className="transition-colors hover:text-secondary text-neutral-800 whitespace-nowrap"
               >
                 {item.name}
               </Link>

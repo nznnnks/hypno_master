@@ -1,8 +1,15 @@
 import Hero from "@/components/Hero";
 import About from "@/components/About";
-import GymnasticsBlock from "@/components/GymnasticsBlock";
+import ScienceAdvantage from "@/components/ScienceAdvantage";
+import BodyPrinciples from "@/components/BodyPrinciples";
+import HealingProcess from "@/components/HealingProcess";
+import ExtrasensoryDevelopment from "@/components/ExtrasensoryDevelopment";
+import SignupStrip from "@/components/SignupStrip";
 import CategoriesBlock from "@/components/CategoriesBlock";
+import GymnasticsBlock from "@/components/GymnasticsBlock";
 import InfoSection from "@/components/InfoSection";
+import GiftBlock from "@/components/GiftBlock";
+import ApplicationForm from "@/components/ApplicationForm";
 import CTASection from "@/components/CTASection";
 
 export default function Home() {
@@ -10,9 +17,16 @@ export default function Home() {
     <div className="flex flex-col w-full">
       <Hero />
       <About />
-      <GymnasticsBlock />
+      <ScienceAdvantage />
+      <BodyPrinciples />
+      <HealingProcess />
+      <ExtrasensoryDevelopment />
+      <SignupStrip />
       <CategoriesBlock />
+      <GymnasticsBlock />
       <InfoSection />
+      <GiftBlock />
+      <ApplicationForm />
       <CTASection />
     </div>
   );
