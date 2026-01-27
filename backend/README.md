@@ -4,17 +4,8 @@ Dev-only Python backend with SQLite storage for user registration and login.
 
 ## Email settings
 
-SMTP settings live in `backend/settings.py`.
+SMTP settings live in `backend/settings.py`. Create file settings.py and fill SMTP strings
 
-You can use either:
-- environment variables, or
-- a local `backend/.env` file (auto-loaded if present; `backend/.env` is gitignored).
-
-Create `.env` from the template:
-
-```powershell
-Copy-Item .\.env.example .\.env
-```
 
 ## Email verification API
 
