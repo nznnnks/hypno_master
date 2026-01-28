@@ -34,6 +34,14 @@ const directions = [
     image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&q=80',
     href: '/healing'
   },
+  {
+    id: 'hypnosis',
+    title: 'Гипноз',
+    description: 'Техники управления состоянием, фокусом и восстановлением через глубокую релаксацию.',
+    icon: <Sparkles className="w-8 h-8" />,
+    image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&q=80',
+    href: '/hypnosis'
+  },
 ];
 
 export default function CategoriesBlock() {
